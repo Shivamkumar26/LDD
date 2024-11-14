@@ -63,7 +63,7 @@ static int __init simple_char_init(void) {
         printk(KERN_ALERT "simple_char_dev: Failed to add cdev\n");
         return ret;
     }
-    my_class = class_create(THIS_MODULE, "simple_class");
+    my_class = class_create("simple_class");
     if (IS_ERR(my_class)) {
         cdev_del(&my_cdev);
         unregister_chrdev_region(dev_num, 1);
