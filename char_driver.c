@@ -29,6 +29,7 @@ static ssize_t dev_read(struct file *file, char __user *user_buffer, size_t size
     not_copied = copy_to_user(user_buffer, kernel_buffer + *offset, to_copy);
     *offset += to_copy - not_copied;
     printk(KERN_INFO "simple_char_dev: Read %zu bytes\n", to_copy - not_copied);
+    printk(KERN_INFO "/n not copied %zu", not_copied); 
     return to_copy - not_copied;
 }
  
@@ -40,6 +41,42 @@ static ssize_t dev_write(struct file *file, const char __user *user_buffer, size
     printk(KERN_INFO "simple_char_dev: Written %zu bytes\n", to_copy - not_copied);
     return to_copy - not_copied;
 }
+
+loff_t driver_lseek(struct file *filp, loff_t offset, int whence)
+{
+    loff_t DEV_MEM_SIZE = 1024;
+	loff_t temp;
+
+	pr_info("lseek requested \n");
+	pr_info("Current value of the file position = %lld\n",filp->f_pos);
+
+	switch(whence)
+	{
+		case SEEK_SET:
+			if((offset > DEV_MEM_SIZE) || (offset < 0))
+				return -EINVAL;
+			filp->f_pos = offset;
+			break;
+		case SEEK_CUR:
+			temp = filp->f_pos + offset;
+			if((temp > DEV_MEM_SIZE) || (temp < 0))
+				return -EINVAL;
+			filp->f_pos = temp;
+			break;
+		case SEEK_END:
+			temp = DEV_MEM_SIZE + offset;
+			if((temp > DEV_MEM_SIZE) || (temp < 0))
+				return -EINVAL;
+			filp->f_pos = temp;
+			break;
+		default:
+			return -EINVAL;
+	}
+	
+	pr_info("New value of the file position = %lld\n",filp->f_pos);
+    return temp;
+}
+	
  
 static struct file_operations fops = {
     .owner = THIS_MODULE,
@@ -47,6 +84,7 @@ static struct file_operations fops = {
     .release = dev_release,
     .read = dev_read,
     .write = dev_write,
+    .llseek = driver_lseek,
 };
  
 static int __init simple_char_init(void) {
